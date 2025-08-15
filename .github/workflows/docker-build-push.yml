@@ -76,33 +76,47 @@ jobs:
       # 输出构建摘要信息
       - name: Build Summary
         run: |
-          echo "🚀 Build Summary"
-          echo "==============================================="
-          echo ""
-          echo "📋 Build Information:"
-          echo "  Event Type:        ${{ github.event_name }}"
-          echo "  Branch/Tag:        ${{ github.ref_name }}"
-          echo "  Commit SHA:        ${{ github.sha }}"
-          echo "  Build Time:        $(date -u)"
-          echo "  Architectures:     linux/amd64, linux/arm64"
-          echo "  Docker Repository: ghcr.io/${{ steps.project-info.outputs.REPO_OWNER }}/${{ steps.project-info.outputs.PROJECT_NAME }}"
-          echo "  Package Name:      ${{ steps.project-info.outputs.PROJECT_NAME }}"
-          echo "  Package Version:   ${{ steps.project-info.outputs.VERSION }}"
-          echo "  Action:            ✅ Built and Pushed"
-          echo "  Registry:          GitHub Container Registry"
-          echo ""
-          echo "🏷️ Generated Tags:"
-          echo "  ghcr.io/${{ steps.project-info.outputs.REPO_OWNER }}/${{ steps.project-info.outputs.PROJECT_NAME }}:latest"
-          echo "  ghcr.io/${{ steps.project-info.outputs.REPO_OWNER }}/${{ steps.project-info.outputs.PROJECT_NAME }}:${{ steps.project-info.outputs.TAG }}"
-          echo ""
-          echo "💡 Usage Examples:"
-          echo "  # Pull latest version (recommended)"
-          echo "  docker pull ghcr.io/${{ steps.project-info.outputs.REPO_OWNER }}/${{ steps.project-info.outputs.PROJECT_NAME }}:latest"
-          echo ""
-          echo "  # Pull specific version"
-          echo "  docker pull ghcr.io/${{ steps.project-info.outputs.REPO_OWNER }}/${{ steps.project-info.outputs.PROJECT_NAME }}:${{ steps.project-info.outputs.TAG }}"
-          echo ""
-          echo "  # Run container"
-          echo "  docker run -p 3000:3000 ghcr.io/${{ steps.project-info.outputs.REPO_OWNER }}/${{ steps.project-info.outputs.PROJECT_NAME }}:latest"
-          echo ""
-          echo "==============================================="
+          echo "## 🚀 Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Event Type** | \`${{ github.event_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Branch/Tag** | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Commit SHA** | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Build Time** | \`$(date -u)\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Architectures** | \`linux/amd64\`, \`linux/arm64\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Docker Repository** | \`ghcr.io/${{ steps.project-info.outputs.REPO_OWNER }}/${{ steps.project-info.outputs.PROJECT_NAME }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Package Name** | \`${{ steps.project-info.outputs.PROJECT_NAME }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Package Version** | \`${{ steps.project-info.outputs.VERSION }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Action** | ✅ **Built and Pushed** |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Registry** | GitHub Container Registry |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Generated Tags:" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "ghcr.io/${{ steps.project-info.outputs.REPO_OWNER }}/${{ steps.project-info.outputs.PROJECT_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "ghcr.io/${{ steps.project-info.outputs.REPO_OWNER }}/${{ steps.project-info.outputs.PROJECT_NAME }}:${{ steps.project-info.outputs.TAG }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🎯 Usage Examples:" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "# Pull latest version (recommended)" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ghcr.io/${{ steps.project-info.outputs.REPO_OWNER }}/${{ steps.project-info.outputs.PROJECT_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Pull specific version" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ghcr.io/${{ steps.project-info.outputs.REPO_OWNER }}/${{ steps.project-info.outputs.PROJECT_NAME }}:${{ steps.project-info.outputs.TAG }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Run container" >> $GITHUB_STEP_SUMMARY
+          echo "docker run -p 3000:3000 ghcr.io/${{ steps.project-info.outputs.REPO_OWNER }}/${{ steps.project-info.outputs.PROJECT_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Build success notification
+        run: |
+          echo "✅ Multi-architecture Docker image build completed successfully!"
+          echo "📊 Build Time: $(date -u)"
+          echo "🏗️ Architectures: linux/amd64, linux/arm64"
+          echo "🐳 Docker Repository: ghcr.io/${{ steps.project-info.outputs.REPO_OWNER }}/${{ steps.project-info.outputs.PROJECT_NAME }}"
+          echo "📦 Package: ${{ steps.project-info.outputs.PROJECT_NAME }}"
+          echo "🔖 Version: ${{ steps.project-info.outputs.VERSION }}"
+          echo "📤 Pushed to GitHub Container Registry"
+          echo "🏷️ Tags pushed:"
+          echo "  - latest (always updated)"
+          echo "  - ${{ steps.project-info.outputs.TAG }} (version tag)"
