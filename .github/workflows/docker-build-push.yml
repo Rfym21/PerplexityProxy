@@ -36,8 +36,13 @@ jobs:
           PROJECT_NAME=$(grep '^project_name=' .version | cut -d'=' -f2)
           VERSION=$(grep '^version=' .version | cut -d'=' -f2)
 
+          # 确保镜像名称为小写
+          REPO_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          PROJECT_NAME_LOWER=$(echo "$PROJECT_NAME" | tr '[:upper:]' '[:lower:]')
+
           # 设置输出变量
-          echo "PROJECT_NAME=$PROJECT_NAME" >> $GITHUB_OUTPUT
+          echo "PROJECT_NAME=$PROJECT_NAME_LOWER" >> $GITHUB_OUTPUT
+          echo "REPO_OWNER=$REPO_OWNER" >> $GITHUB_OUTPUT
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
           if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
@@ -50,8 +55,13 @@ jobs:
             echo "TAG=v${VERSION}-${DATE}-${SHORT_SHA}" >> $GITHUB_OUTPUT
           fi
 
-          echo "Using project name: $PROJECT_NAME"
-          echo "Using version: $VERSION"
+          echo "📋 Extracted Information:"
+          echo "  Original project name: $PROJECT_NAME"
+          echo "  Lowercase project name: $PROJECT_NAME_LOWER"
+          echo "  Repository owner: ${{ github.repository_owner }}"
+          echo "  Lowercase repo owner: $REPO_OWNER"
+          echo "  Version: $VERSION"
+          echo "  Generated tag: $(if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then echo "v${VERSION}"; else echo "v${VERSION}-${DATE}-${SHORT_SHA}"; fi)"
 
       - name: Build and Push Multi-Architecture Images
         uses: docker/build-push-action@v5
@@ -60,8 +70,8 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ghcr.io/${{ github.repository_owner }}/${{ steps.project-info.outputs.PROJECT_NAME }}:latest
-            ghcr.io/${{ github.repository_owner }}/${{ steps.project-info.outputs.PROJECT_NAME }}:${{ steps.project-info.outputs.TAG }}
+            ghcr.io/${{ steps.project-info.outputs.REPO_OWNER }}/${{ steps.project-info.outputs.PROJECT_NAME }}:latest
+            ghcr.io/${{ steps.project-info.outputs.REPO_OWNER }}/${{ steps.project-info.outputs.PROJECT_NAME }}:${{ steps.project-info.outputs.TAG }}
       
       # 输出构建摘要信息
       - name: Build Summary
@@ -73,26 +83,26 @@ jobs:
           echo "  Event Type:        ${{ github.event_name }}"
           echo "  Branch/Tag:        ${{ github.ref_name }}"
           echo "  Commit SHA:        ${{ github.sha }}"
-          echo "  Build Duration:    $(date -u)"
+          echo "  Build Time:        $(date -u)"
           echo "  Architectures:     linux/amd64, linux/arm64"
-          echo "  Docker Repository: ghcr.io/${{ github.repository_owner }}/${{ steps.project-info.outputs.PROJECT_NAME }}"
+          echo "  Docker Repository: ghcr.io/${{ steps.project-info.outputs.REPO_OWNER }}/${{ steps.project-info.outputs.PROJECT_NAME }}"
           echo "  Package Name:      ${{ steps.project-info.outputs.PROJECT_NAME }}"
           echo "  Package Version:   ${{ steps.project-info.outputs.VERSION }}"
           echo "  Action:            ✅ Built and Pushed"
           echo "  Registry:          GitHub Container Registry"
           echo ""
           echo "🏷️ Generated Tags:"
-          echo "  ghcr.io/${{ github.repository_owner }}/${{ steps.project-info.outputs.PROJECT_NAME }}:latest"
-          echo "  ghcr.io/${{ github.repository_owner }}/${{ steps.project-info.outputs.PROJECT_NAME }}:${{ steps.project-info.outputs.TAG }}"
+          echo "  ghcr.io/${{ steps.project-info.outputs.REPO_OWNER }}/${{ steps.project-info.outputs.PROJECT_NAME }}:latest"
+          echo "  ghcr.io/${{ steps.project-info.outputs.REPO_OWNER }}/${{ steps.project-info.outputs.PROJECT_NAME }}:${{ steps.project-info.outputs.TAG }}"
           echo ""
           echo "💡 Usage Examples:"
           echo "  # Pull latest version (recommended)"
-          echo "  docker pull ghcr.io/${{ github.repository_owner }}/${{ steps.project-info.outputs.PROJECT_NAME }}:latest"
+          echo "  docker pull ghcr.io/${{ steps.project-info.outputs.REPO_OWNER }}/${{ steps.project-info.outputs.PROJECT_NAME }}:latest"
           echo ""
           echo "  # Pull specific version"
-          echo "  docker pull ghcr.io/${{ github.repository_owner }}/${{ steps.project-info.outputs.PROJECT_NAME }}:${{ steps.project-info.outputs.TAG }}"
+          echo "  docker pull ghcr.io/${{ steps.project-info.outputs.REPO_OWNER }}/${{ steps.project-info.outputs.PROJECT_NAME }}:${{ steps.project-info.outputs.TAG }}"
           echo ""
           echo "  # Run container"
-          echo "  docker run -p 3000:3000 ghcr.io/${{ github.repository_owner }}/${{ steps.project-info.outputs.PROJECT_NAME }}:latest"
+          echo "  docker run -p 3000:3000 ghcr.io/${{ steps.project-info.outputs.REPO_OWNER }}/${{ steps.project-info.outputs.PROJECT_NAME }}:latest"
           echo ""
           echo "==============================================="
