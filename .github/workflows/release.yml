@@ -1,0 +1,164 @@
+name: Publish Release
+
+on:
+  push:
+    branches:
+      - 'main'
+    paths:
+      - '.version' # 仅当 .version 文件变化时触发
+  workflow_dispatch: # 允许手动触发
+
+jobs:  
+  update-release-draft:  
+    permissions:  
+      contents: write  
+      pull-requests: write  
+    runs-on: ubuntu-latest  
+    steps:  
+      # Step 1: 检出代码库  
+      - name: Checkout code  
+        uses: actions/checkout@v3  
+
+      # Step 2: 获取项目名称和版本号
+      - name: Get Project Info
+        id: project_info
+        run: |
+          # 解析 .version 文件
+          PROJECT_NAME=$(grep '^project_name=' .version | cut -d'=' -f2)
+          VERSION=$(grep '^version=' .version | cut -d'=' -f2)
+          TAG_NAME="v${VERSION}"
+
+          echo "project_name=$PROJECT_NAME" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "Using project name: $PROJECT_NAME"
+          echo "Using version: $VERSION"
+          echo "Using tag name: $TAG_NAME"
+
+      # Step 3: 自动生成 Release  
+      - name: Create Release  
+        id: create_release  
+        uses: actions/create-release@v1  
+        env:  
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
+        with:
+          tag_name: ${{ steps.project_info.outputs.tag_name }}
+          release_name: ${{ steps.project_info.outputs.tag_name }}
+          draft: false  
+          prerelease: false  
+      
+      # Step 4: 设置 Go 环境
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      # Step 5: 构建多平台二进制文件
+      - name: Build binaries for multiple platforms
+        run: |
+          PROJECT_NAME=${{ steps.project_info.outputs.project_name }}
+          VERSION=${{ steps.project_info.outputs.version }}
+
+          # 创建构建目录
+          mkdir -p build
+
+          # Windows AMD64
+          GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -o build/${PROJECT_NAME}-${VERSION}-windows-amd64.exe .
+
+          # macOS AMD64
+          GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w" -o build/${PROJECT_NAME}-${VERSION}-macos-amd64 .
+
+          # macOS ARM64
+          GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w" -o build/${PROJECT_NAME}-${VERSION}-macos-arm64 .
+
+          # Linux AMD64
+          GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o build/${PROJECT_NAME}-${VERSION}-linux-amd64 .
+
+          # Linux ARM64
+          GOOS=linux GOARCH=arm64 go build -ldflags "-s -w" -o build/${PROJECT_NAME}-${VERSION}-linux-arm64 .
+
+      # Step 6: 上传多平台构建文件
+      - name: Upload Windows AMD64 Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/${{ steps.project_info.outputs.project_name }}-${{ steps.project_info.outputs.version }}-windows-amd64.exe
+          asset_name: ${{ steps.project_info.outputs.project_name }}-${{ steps.project_info.outputs.version }}-windows-amd64.exe
+          asset_content_type: application/octet-stream
+
+      - name: Upload macOS AMD64 Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/${{ steps.project_info.outputs.project_name }}-${{ steps.project_info.outputs.version }}-macos-amd64
+          asset_name: ${{ steps.project_info.outputs.project_name }}-${{ steps.project_info.outputs.version }}-macos-amd64
+          asset_content_type: application/octet-stream
+
+      - name: Upload macOS ARM64 Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/${{ steps.project_info.outputs.project_name }}-${{ steps.project_info.outputs.version }}-macos-arm64
+          asset_name: ${{ steps.project_info.outputs.project_name }}-${{ steps.project_info.outputs.version }}-macos-arm64
+          asset_content_type: application/octet-stream
+
+      - name: Upload Linux AMD64 Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/${{ steps.project_info.outputs.project_name }}-${{ steps.project_info.outputs.version }}-linux-amd64
+          asset_name: ${{ steps.project_info.outputs.project_name }}-${{ steps.project_info.outputs.version }}-linux-amd64
+          asset_content_type: application/octet-stream
+
+      - name: Upload Linux ARM64 Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/${{ steps.project_info.outputs.project_name }}-${{ steps.project_info.outputs.version }}-linux-arm64
+          asset_name: ${{ steps.project_info.outputs.project_name }}-${{ steps.project_info.outputs.version }}-linux-arm64
+          asset_content_type: application/octet-stream
+
+      # Step 7: 输出发布摘要信息
+      - name: Release Summary
+        run: |
+          echo "🚀 Release Summary"
+          echo "==============================================="
+          echo ""
+          echo "📋 Release Information:"
+          echo "  Event Type:        ${{ github.event_name }}"
+          echo "  Branch/Tag:        ${{ github.ref_name }}"
+          echo "  Commit SHA:        ${{ github.sha }}"
+          echo "  Build Duration:    $(date -u)"
+          echo "  Package Name:      ${{ steps.project_info.outputs.project_name }}"
+          echo "  Package Version:   ${{ steps.project_info.outputs.version }}"
+          echo "  Release Tag:       ${{ steps.project_info.outputs.tag_name }}"
+          echo "  Action:            ✅ Released"
+          echo "  Platforms:         Windows, macOS, Linux (AMD64/ARM64)"
+          echo ""
+          echo "🔗 Release Details:"
+          echo "  Release URL:       ${{ steps.create_release.outputs.html_url }}"
+          echo "  Upload URL:        Available"
+          echo "  Asset Type:        Binary executables"
+          echo ""
+          echo "📦 Available Downloads:"
+          echo "  Windows (AMD64):   ${{ steps.project_info.outputs.project_name }}-${{ steps.project_info.outputs.version }}-windows-amd64.exe"
+          echo "  macOS (AMD64):     ${{ steps.project_info.outputs.project_name }}-${{ steps.project_info.outputs.version }}-macos-amd64"
+          echo "  macOS (ARM64):     ${{ steps.project_info.outputs.project_name }}-${{ steps.project_info.outputs.version }}-macos-arm64"
+          echo "  Linux (AMD64):     ${{ steps.project_info.outputs.project_name }}-${{ steps.project_info.outputs.version }}-linux-amd64"
+          echo "  Linux (ARM64):     ${{ steps.project_info.outputs.project_name }}-${{ steps.project_info.outputs.version }}-linux-arm64"
+          echo ""
+          echo "💡 Usage:"
+          echo "  Download the appropriate binary for your platform and run directly"
+          echo "  No additional dependencies required"
+          echo ""
+          echo "==============================================="
