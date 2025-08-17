@@ -92,7 +92,7 @@
        - NO_ROLE_PREFIX=false
        - IS_INCOGNITO=true
        - SEARCH_RESULT_COMPATIBLE=false
-     restart: aways
+     restart: always
  ```
  然后运行：
  ```bash
